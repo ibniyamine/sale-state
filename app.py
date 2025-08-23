@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 
 
-st.title("Dashboard")
+st.title("ventes aux etats unis")
 df = pd.read_csv('ventes.csv')
 # filtrer par date
 ## conversion de la colonne date
@@ -72,7 +72,7 @@ region = st.sidebar.multiselect("Region", region_dispo)
 if region:
     df = df[df['Region'].isin(region)]
 
-#Filtrage apr etat
+#Filtrage par etat
 state_dispo = df['State_complet'].unique().tolist()
 state = st.sidebar.multiselect("State", state_dispo)
 if state:
@@ -107,7 +107,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     total_ventes = df['total'].sum()
-    st.metric("💰 Total des ventes", f"{total_ventes:,.0f}")
+    st.metric("💰 Total des ventes", f"${total_ventes:,.0f}")
 
 with col2:
     nb_clients = df['cust_id'].nunique()
@@ -128,26 +128,25 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Ventes par Catégorie")
-    fig1, ax1 = plt.subplots(figsize=(6, 5))  # Taille contrôlée pour hauteur égale
-    sns.barplot(x=ventes_par_categorie.index, y=ventes_par_categorie.values, ax=ax1)
-
-    # Rotation oblique des labels X
-    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha='right')
-    ax1.set_ylabel("Nombre de ventes")
-    ax1.set_xlabel("Catégorie")
-
-    # Ajouter les valeurs sur les barres
-    for i, val in enumerate(ventes_par_categorie.values):
-        ax1.text(i, val + 0.5, str(val), ha='center', fontsize=8)
-
-    st.pyplot(fig1)
+    fig1 = px.bar(
+        x=ventes_par_categorie.index,
+        y=ventes_par_categorie.values,
+        text=ventes_par_categorie.values,
+        labels={'x': "Catégorie", 'y': "Nombre de ventes"},
+        color=ventes_par_categorie.index
+    )
+    fig1.update_traces(textposition="outside")
+    fig1.update_layout(xaxis_tickangle=-45, showlegend=False)
+    st.plotly_chart(fig1)
 
 with col2:
     st.subheader("Ventes par Région")
-    fig2, ax2 = plt.subplots(figsize=(6, 7))  # Même hauteur que le barplot
-    ax2.pie(ventes_par_region.values, labels=ventes_par_region.index, autopct='%1.1f%%')
-    ax2.axis('equal')  # Pour que le cercle soit bien rond
-    st.pyplot(fig2)
+    fig2 = px.pie(
+        names=ventes_par_region.index,
+        values=ventes_par_region.values,
+        hole=0.4,  # tu peux mettre hole=0.3 pour un donut
+    )
+    st.plotly_chart(fig2)
 
 
 
@@ -156,36 +155,39 @@ with col2:
 st.subheader("Top 10 des Meilleurs Clients")
 if st.checkbox("par le nombre des commandes"):
     # Regrouper par client et trier par nombre de ventes
-    top_clients = df['full_name'].value_counts().head(10)
+    top_clients = df['full_name'].value_counts().sort_values(ascending=False).head(10)
 
     # Création du barplot
-    fig3, ax3 = plt.subplots(figsize=(10, 5))
-    sns.barplot(x=top_clients.values, y=top_clients.index, ax=ax3, palette="crest")
-
-    # Ajouter les valeurs sur les barres
-    for i, v in enumerate(top_clients.values):
-        ax3.text(v + 0.5, i, str(v), va='center', fontsize=9)
-
-    ax3.set_xlabel("Nombre de commande")
-    ax3.set_ylabel("Client")
-    st.pyplot(fig3)
+    fig3 = px.bar(
+        x=top_clients.values,
+        y=top_clients.index,
+        orientation='h',
+        text=top_clients.values,
+        labels={'x': 'Nombre de commandes', 'y': 'Client'},
+        color=top_clients.values,
+        color_continuous_scale='Tealgrn'
+    )
+    fig3.update_layout(yaxis=dict(autorange="reversed"))
+    fig3.update_traces(textposition='outside')
+    st.plotly_chart(fig3, use_container_width=True)
 
 if st.checkbox("par le montant generer"):
-    # Regrouper par client et trier par nombre de ventes
     # Regrouper la somme des ventes par client
     top_clients= df.groupby('full_name')['total'].sum().sort_values(ascending=False).head(10)
 
     # Création du barplot
-    fig3, ax3 = plt.subplots(figsize=(10, 5))
-    sns.barplot(x=top_clients.values, y=top_clients.index, ax=ax3, palette="crest")
-
-    # Ajouter les valeurs sur les barres
-    for i, v in enumerate(top_clients.values):
-        ax3.text(v + 0.5, i, str(v), va='center', fontsize=9)
-
-    ax3.set_xlabel("Montant")
-    ax3.set_ylabel("Client")
-    st.pyplot(fig3)
+    fig3 = px.bar(
+        x=top_clients.values,
+        y=top_clients.index,
+        orientation='h',
+        text=top_clients.values,
+        labels={'x': 'Montant', 'y': 'Client'},
+        color=top_clients.values,
+        color_continuous_scale='Tealgrn'
+    )
+    fig3.update_layout(yaxis=dict(autorange="reversed"))
+    fig3.update_traces(textposition='outside')
+    st.plotly_chart(fig3, use_container_width=True)
 
 
 
@@ -195,19 +197,20 @@ col3, col4 = st.columns(2)
 # 📊 Histogramme des âges
 with col3:
     st.subheader("Répartition de l’âge des clients")
-    fig5, ax5 = plt.subplots(figsize=(6, 4))
-    histplot = sns.histplot(df['age'], bins=10, kde=False, ax=ax5, color='skyblue')
+    fig5 = px.histogram(
+        df,
+        x="age",
+        nbins=10,
+        text_auto=True,
+        color_discrete_sequence=['skyblue']
+    )
 
-# Ajouter les valeurs sur les barres
-    for patch in ax5.patches:
-        height = patch.get_height()
-        if height > 0:
-            ax5.text(patch.get_x() + patch.get_width() / 2, height + 0.5,
-                    str(int(height)), ha='center', fontsize=9)
-
-    ax5.set_xlabel("Âge")
-    ax5.set_ylabel("Nombre de clients")
-    st.pyplot(fig5)
+    fig5.update_layout(
+        xaxis_title="Âge",
+        yaxis_title="Nombre de clients",
+        bargap=0.1
+    )
+    st.plotly_chart(fig5, use_container_width=True)
 
 # Diagramme de genre (hommes/femmes)
 with col4:
@@ -218,17 +221,29 @@ with col4:
     total = genre_counts.sum()
     genre_percentages = (genre_counts / total * 100).round(1)
 
-    fig6, ax6 = plt.subplots(figsize=(6, 4))
-    bars = sns.barplot(x=genre_counts.index, y=genre_counts.values, ax=ax6, palette='pastel')
+    genre_df = genre_counts.reset_index()
+    genre_df.columns = ['Genre', 'Nombre']
+    genre_df['Pourcentage'] = genre_percentages.values
 
-    # Ajouter nombre + pourcentage au-dessus de chaque barre
-    for i, val in enumerate(genre_counts.values):
-        pct = genre_percentages[i]
-        ax6.text(i, val + 0.5, f'{val} ({pct}%)', ha='center', fontsize=9)
+    # Création du barplot
+    fig6 = px.bar(
+        genre_df,
+        x="Genre",
+        y="Nombre",
+        text=genre_df.apply(lambda row: f"{row['Nombre']} ({row['Pourcentage']}%)", axis=1),
+        color="Genre",
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
 
-    ax6.set_ylabel("Nombre de clients")
-    ax6.set_xlabel("Genre")
-    st.pyplot(fig6)
+    fig6.update_traces(textposition="outside")
+    fig6.update_layout(
+        xaxis_title="Genre",
+        yaxis_title="Nombre de clients",
+        showlegend=False
+    )
+
+    st.plotly_chart(fig6, use_container_width=True)
+
 
 
 
@@ -249,18 +264,15 @@ ventes_par_mois['Mois_Annee_date'] = pd.to_datetime(ventes_par_mois['Mois_Annee_
 ventes_par_mois = ventes_par_mois.sort_values('Mois_Annee_date')
 
 # Tracer la courbe
-fig7, ax7 = plt.subplots(figsize=(12, 5))
-sns.lineplot(data=ventes_par_mois, x='Mois_Annee_affichage', y='Total_ventes', marker='o', ax=ax7)
-
-# Affichage de tous les mois + rotation
-ax7.set_xticks(range(len(ventes_par_mois)))
-ax7.set_xticklabels(ventes_par_mois['Mois_Annee_affichage'], rotation=45, ha='right')
-
-ax7.set_xlabel("Mois-Année")
-ax7.set_ylabel("Nombre de ventes")
-ax7.set_title("Nombre total de ventes par mois")
-
-st.pyplot(fig7)
+fig7 = px.line(
+    ventes_par_mois,
+    x='Mois_Annee_affichage',
+    y='Total_ventes',
+    markers=True,
+    title="Nombre total de ventes par mois"
+)
+fig7.update_xaxes(tickangle=45)
+st.plotly_chart(fig7)
 
 
 # Question 8
@@ -364,29 +376,49 @@ with col1:
     sizes = segment_counts.values
 
     # Création du camembert
-    fig1, ax1 = plt.subplots()
-    ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
-    ax1.axis('equal')  # Cercle parfait
-    st.pyplot(fig1)
+    fig = px.pie(
+    names=labels,        # les catégories
+    values=sizes,        # les valeurs
+    hole=0,              # =0 → camembert plein ; =0.4 → donut
+    )
 
-# === Diagramme en barres : Montant total par segment ===
+    # Options supplémentaires pour ressembler à ton code Matplotlib
+    fig.update_traces(textinfo='percent+label')   # afficher % et labels
+    st.plotly_chart(fig, use_container_width=True)
+
+# Diagramme en barres : Montant total par segment
 with col2:
     st.subheader("Montant total généré par segment")
-    
     # Regrouper les montants par segment
     montant_par_segment = df.groupby('Segment')['total'].sum().sort_values(ascending=False)
 
-    # Création du graphique en barres
-    fig2, ax2 = plt.subplots(figsize=(6, 4))
-    bars = ax2.bar(montant_par_segment.index, montant_par_segment.values)
+    # Créer un DataFrame pour Plotly
+    df_plot = montant_par_segment.reset_index()
+    df_plot.columns = ["Segment", "Montant"]
 
-    # Ajouter les valeurs sur chaque barre
-    for bar in bars:
-        height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width() / 2, height,
-                 f'{height:,.0f}', ha='center', va='bottom')
+    # Graphique interactif
+    fig2 = px.bar(
+        df_plot,
+        x="Segment",
+        y="Montant",
+        text=df_plot["Montant"].apply(lambda v: f"${v:,.0f}"),  # valeurs formatées avec $
+        labels={"Montant": "Montant total", "Segment": "Segment"},
+        color="Montant",
+        color_continuous_scale="Tealgrn"
+    )
 
-    ax2.set_ylabel("Montant total")
-    ax2.set_xlabel("Segment")
-    plt.xticks(rotation=45)
-    st.pyplot(fig2)
+    # Options
+    fig2.update_traces(textposition="outside")
+    fig2.update_layout(xaxis_tickangle=-45)
+
+    st.plotly_chart(fig2, use_container_width=True)
+
+st.subheader("Treemap")
+df_unique = df.drop_duplicates(subset=["cust_id"])
+fig8 = px.treemap(
+    df_unique,
+    path=["Region", "Segment"],
+    color="Segment"
+)
+st.plotly_chart(fig8, use_container_width=True)
+
