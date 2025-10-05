@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
+from streamlit_extras.stylable_container import stylable_container
 
 
 st.title("ventes aux etats unis")
@@ -103,20 +104,36 @@ statut_selection = st.multiselect(
 if statut_selection:
     df = df[df['status'].isin(statut_selection)]
 
+
+total_ventes = df['total'].sum()
+nb_clients = df['cust_id'].nunique()
+nb_commandes = df['order_id'].nunique()
+
+# Fonction pour créer une carte
+def kpi_card(title, value, emoji):
+    st.markdown(f"""
+        <div style='
+            background-color: #f0f2f6;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        '>
+            <div style='font-size:16px; color:#555;'>{emoji} {title}</div>
+            <div style='font-size:32px; font-weight:bold; color:#1f77b4;'>{value}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# Affichage en colonnes
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    total_ventes = df['total'].sum()
-    st.metric("💰 Total des ventes", f"${total_ventes:,.0f}")
+    kpi_card("Total des ventes", f"${total_ventes:,.0f}", "💰")
 
 with col2:
-    nb_clients = df['cust_id'].nunique()
-    st.metric("👥 Nombre de Client", nb_clients)
+    kpi_card("Nombre de Clients", nb_clients, "👥")
 
 with col3:
-    nb_commandes = df['order_id'].nunique()
-    st.metric("🧾 Nombre de Commandes", nb_commandes)
-
+    kpi_card("Commandes", nb_commandes, "🧾")
 
 # Regrouper les données
 # Comptage des ventes par catégorie et par région
